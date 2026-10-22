@@ -1,3 +1,5 @@
+//  job sequencing - huffman code
+
 #include <iostream>
 #include <queue>
 #include <string>
