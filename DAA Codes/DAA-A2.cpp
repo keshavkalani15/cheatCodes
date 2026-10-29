@@ -1,4 +1,4 @@
-//  job sequencing - huffman code
+//  huffman code - greedy approach
 
 #include <iostream>
 #include <queue>
