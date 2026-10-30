@@ -1,0 +1,205 @@
+PRACTICAL 1: UBER FARE PREDICTION
+=================================
+
+Aim:
+Predict Uber ride fares using Linear Regression and Random Forest Regression,
+then compare the models using R2 and RMSE.
+
+Run each numbered step in a separate notebook cell, in order.
+
+
+STEP 1: IMPORT REQUIRED LIBRARIES
+---------------------------------
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import r2_score, mean_squared_error
+
+
+STEP 2: LOAD THE UBER DATASET
+-----------------------------
+# Change the filename or path if needed.
+file_path = "uber.csv"
+
+df = pd.read_csv(file_path)
+
+print("Dataset loaded successfully")
+print("Rows and columns:", df.shape)
+print(df.head())
+
+
+STEP 3: INSPECT THE DATASET
+---------------------------
+print("Column names:")
+print(df.columns.tolist())
+
+print("\nData types and non-empty values:")
+df.info()
+
+print("\nSummary of numeric columns:")
+print(df.describe())
+
+
+STEP 4: REMOVE UNUSED COLUMNS
+-----------------------------
+# Unnamed: 0 is an extra row-number column; key is an identifier.
+df = df.drop(columns=["Unnamed: 0", "key"], errors="ignore")
+
+print(df.columns.tolist())
+
+
+STEP 5: CHECK AND REMOVE MISSING VALUES
+---------------------------------------
+print("Missing values before cleaning:")
+print(df.isnull().sum())
+
+df = df.dropna()
+
+print("\nDataset shape after removing missing rows:", df.shape)
+print("Missing values after cleaning:")
+print(df.isnull().sum())
+
+
+STEP 6: REMOVE CLEARLY INVALID VALUES
+-------------------------------------
+df = df[
+    (df["fare_amount"] > 0) &
+    (df["pickup_longitude"].between(-180, 180)) &
+    (df["dropoff_longitude"].between(-180, 180)) &
+    (df["pickup_latitude"].between(-90, 90)) &
+    (df["dropoff_latitude"].between(-90, 90)) &
+    (df["passenger_count"].between(1, 6))
+].copy()
+
+print("Dataset shape after removing invalid values:", df.shape)
+
+
+STEP 7: EXTRACT FEATURES FROM PICKUP TIME
+-----------------------------------------
+df["pickup_datetime"] = pd.to_datetime(
+    df["pickup_datetime"], errors="coerce", utc=True
+)
+
+df = df.dropna(subset=["pickup_datetime"]).copy()
+
+df["pickup_hour"] = df["pickup_datetime"].dt.hour
+df["pickup_day"] = df["pickup_datetime"].dt.day
+df["pickup_month"] = df["pickup_datetime"].dt.month
+df["pickup_year"] = df["pickup_datetime"].dt.year
+
+df = df.drop(columns=["pickup_datetime"])
+
+print(df.head())
+
+
+STEP 8: VISUALIZE FARE OUTLIERS
+-------------------------------
+plt.figure(figsize=(8, 4))
+sns.boxplot(x=df["fare_amount"])
+plt.title("Outliers in Uber Fare")
+plt.show()
+
+
+STEP 9: REMOVE HIGH FARE OUTLIERS USING IQR
+-------------------------------------------
+Q1 = df["fare_amount"].quantile(0.25)
+Q3 = df["fare_amount"].quantile(0.75)
+IQR = Q3 - Q1
+
+lower_limit = max(0, Q1 - 1.5 * IQR)
+upper_limit = Q3 + 1.5 * IQR
+
+df = df[
+    df["fare_amount"].between(lower_limit, upper_limit)
+].copy()
+
+print("Fare limits:", lower_limit, "to", upper_limit)
+print("Shape after outlier removal:", df.shape)
+
+
+STEP 10: CHECK CORRELATION
+--------------------------
+plt.figure(figsize=(10, 7))
+sns.heatmap(df.corr(numeric_only=True), annot=True, cmap="coolwarm", fmt=".2f")
+plt.title("Correlation Between Uber Dataset Features")
+plt.show()
+
+
+STEP 11: SELECT FEATURES AND SPLIT THE DATA
+-------------------------------------------
+# fare_amount is the target to predict; remaining columns are input features.
+X = df.drop(columns=["fare_amount"])
+y = df["fare_amount"]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+print("Training rows:", X_train.shape[0])
+print("Testing rows:", X_test.shape[0])
+
+
+STEP 12: TRAIN LINEAR REGRESSION
+--------------------------------
+linear_model = LinearRegression()
+linear_model.fit(X_train, y_train)
+
+linear_predictions = linear_model.predict(X_test)
+
+
+STEP 13: TRAIN RANDOM FOREST REGRESSION
+---------------------------------------
+random_forest_model = RandomForestRegressor(
+    n_estimators=100,
+    random_state=42,
+    n_jobs=-1
+)
+
+random_forest_model.fit(X_train, y_train)
+
+random_forest_predictions = random_forest_model.predict(X_test)
+
+
+STEP 14: EVALUATE AND COMPARE THE MODELS
+-----------------------------------------
+linear_r2 = r2_score(y_test, linear_predictions)
+linear_rmse = np.sqrt(mean_squared_error(y_test, linear_predictions))
+
+rf_r2 = r2_score(y_test, random_forest_predictions)
+rf_rmse = np.sqrt(mean_squared_error(y_test, random_forest_predictions))
+
+results = pd.DataFrame({
+    "Model": ["Linear Regression", "Random Forest Regression"],
+    "R2 Score": [linear_r2, rf_r2],
+    "RMSE": [linear_rmse, rf_rmse]
+})
+
+print(results)
+
+
+STEP 15: PRINT THE BETTER-PERFORMING MODEL
+------------------------------------------
+# Lower RMSE is better; if tied, the higher R2 score is preferred.
+best_model = results.sort_values(
+    by=["RMSE", "R2 Score"],
+    ascending=[True, False]
+).iloc[0]
+
+print("Better performing model:", best_model["Model"])
+print("R2 score:", round(best_model["R2 Score"], 4))
+print("RMSE:", round(best_model["RMSE"], 4))
+
+
+RESULT
+------
+In the recorded notebook run, Random Forest Regression performed better.
+Its R2 score was approximately 0.7521 and its RMSE was approximately 2.0540.
+
+Note: The IQR rule removed fares above the calculated upper limit (22.25 in the
+recorded run). Some higher fares may be genuine rides, so this cutoff should be
+described as the chosen outlier-handling rule.

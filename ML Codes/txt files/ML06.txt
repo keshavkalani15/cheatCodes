@@ -1,0 +1,96 @@
+PRACTICAL 6: SALES DATA CLUSTERING USING K-MEANS
+================================================
+Run each step in a separate notebook cell, in order.
+
+STEP 1
+----------------------------------------
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+
+STEP 2
+----------------------------------------
+file_path = r"C:\Users\Keshav Kalani\Desktop\lets do this\practicals\ML Codes\ML dataset\sales_data_sample.csv"
+df = pd.read_csv(file_path, encoding="latin1")
+
+print("Dataset loaded successfully")
+print("Rows and columns:", df.shape)
+print(df.head())
+
+STEP 3
+----------------------------------------
+print("Column types:")
+print(df.dtypes)
+
+print("\nMissing values in each column:")
+print(df.isnull().sum())
+
+STEP 4
+----------------------------------------
+features = ["QUANTITYORDERED", "PRICEEACH", "SALES"]
+X = df[features]
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+print("Features selected:", features)
+print("Scaled data shape:", X_scaled.shape)
+
+STEP 5
+----------------------------------------
+inertia_values = []
+
+for k in range(1, 11):
+    model = KMeans(
+        n_clusters=k,
+        random_state=42,
+        n_init=10
+    )
+    model.fit(X_scaled)
+    inertia_values.append(model.inertia_)
+
+plt.plot(range(1, 11), inertia_values, marker="o")
+plt.xlabel("Number of clusters (k)")
+plt.ylabel("Inertia")
+plt.title("Elbow Method")
+plt.xticks(range(1, 11))
+plt.grid(True)
+plt.show()
+
+STEP 6
+----------------------------------------
+kmeans = KMeans(
+    n_clusters=3,
+    random_state=42,
+    n_init=10
+)
+
+df["Cluster"] = kmeans.fit_predict(X_scaled)
+
+print("Cluster counts:")
+print(df["Cluster"].value_counts().sort_index())
+
+print("\nAverage sales features in each cluster:")
+print(df.groupby("Cluster")[features].mean().round(2))
+
+STEP 7
+----------------------------------------
+plt.figure(figsize=(8, 5))
+
+plt.scatter(
+    df["QUANTITYORDERED"],
+    df["SALES"],
+    c=df["Cluster"],
+    cmap="viridis",
+    alpha=0.7
+)
+
+plt.xlabel("Quantity Ordered")
+plt.ylabel("Sales")
+plt.title("Sales Data Clusters using K-Means")
+plt.colorbar(label="Cluster")
+plt.grid(True)
+plt.show()
+

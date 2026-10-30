@@ -1,0 +1,133 @@
+PRACTICAL 5: KNN DIABETES CLASSIFICATION
+========================================
+Run each step in a separate notebook cell, in order.
+
+STEP 1
+----------------------------------------
+import pandas as pd
+import numpy as np
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import (
+    confusion_matrix,
+    accuracy_score,
+    precision_score,
+    recall_score,
+    classification_report
+)
+
+STEP 2
+----------------------------------------
+file_path = r"C:\Users\Keshav Kalani\Desktop\lets do this\practicals\ML Codes\ML dataset\diabetes.csv"
+df = pd.read_csv(file_path)
+
+print("Dataset loaded successfully")
+print("Rows and columns:", df.shape)
+print(df.head())
+
+STEP 3
+----------------------------------------
+print("Missing values in each column:")
+print(df.isnull().sum())
+
+print("\nDuplicate rows:", df.duplicated().sum())
+
+# Zero values in these measurements may represent missing measurements
+measurement_columns = [
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI"
+]
+
+print("\nZero values in measurement columns:")
+print((df[measurement_columns] == 0).sum())
+
+STEP 4
+----------------------------------------
+from sklearn.impute import SimpleImputer
+
+measurement_columns = [
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI"
+]
+
+# Treat zero measurements as missing
+df[measurement_columns] = df[measurement_columns].replace(0, np.nan)
+
+# Separate features (X) from the target label (y)
+X = df.drop(columns=["Outcome"])
+y = df["Outcome"]
+
+# Split into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+print("Training rows:", X_train.shape[0])
+print("Testing rows:", X_test.shape[0])
+print("\nTraining target distribution:")
+print(y_train.value_counts())
+
+STEP 5
+----------------------------------------
+knn_model = make_pipeline(
+    SimpleImputer(strategy="median"),
+    StandardScaler(),
+    KNeighborsClassifier(n_neighbors=5)
+)
+
+knn_model.fit(X_train, y_train)
+
+y_pred = knn_model.predict(X_test)
+
+print("Predictions made successfully")
+print("First 10 predicted outcomes:", y_pred[:10])
+
+STEP 6
+----------------------------------------
+cm = confusion_matrix(y_test, y_pred)
+
+accuracy = accuracy_score(y_test, y_pred)
+error_rate = 1 - accuracy
+precision = precision_score(y_test, y_pred, zero_division=0)
+recall = recall_score(y_test, y_pred, zero_division=0)
+
+print("Confusion Matrix:")
+print(cm)
+
+print("\nAccuracy:", round(accuracy, 4))
+print("Error Rate:", round(error_rate, 4))
+print("Precision:", round(precision, 4))
+print("Recall:", round(recall, 4))
+
+STEP 7
+----------------------------------------
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt="d",
+    cmap="Blues",
+    xticklabels=["No Diabetes", "Diabetes"],
+    yticklabels=["No Diabetes", "Diabetes"]
+)
+
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.title("KNN Confusion Matrix")
+plt.show()
+

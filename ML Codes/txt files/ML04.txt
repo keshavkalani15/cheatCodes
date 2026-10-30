@@ -1,0 +1,61 @@
+PRACTICAL 4: GRADIENT DESCENT
+=============================
+Run each step in a separate notebook cell, in order.
+
+STEP 1
+----------------------------------------
+import matplotlib.pyplot as plt
+
+STEP 2
+----------------------------------------
+def function(x):
+    return (x + 3) ** 2
+
+def derivative(x):
+    return 2 * (x + 3)
+
+STEP 3
+----------------------------------------
+x = 2.0
+learning_rate = 0.1
+max_iterations = 100
+tolerance = 0.000001
+
+x_values = [x]
+y_values = [function(x)]
+
+STEP 4
+----------------------------------------
+for i in range(max_iterations):
+    gradient = derivative(x)
+    new_x = x - learning_rate * gradient
+
+    x_values.append(new_x)
+    y_values.append(function(new_x))
+
+    if abs(new_x - x) < tolerance:
+        x = new_x
+        break
+
+    x = new_x
+
+STEP 5
+----------------------------------------
+print("Iterations:", i + 1)
+print("Minimum x:", round(x, 6))
+print("Minimum y:", round(function(x), 6))
+
+STEP 6
+----------------------------------------
+x_curve = [value / 100 for value in range(-500, 101)]
+y_curve = [function(value) for value in x_curve]
+
+plt.plot(x_curve, y_curve, label="y = (x + 3)^2")
+plt.plot(x_values, y_values, "ro-", label="Gradient Descent steps")
+plt.xlabel("x")
+plt.ylabel("y")
+plt.title("Gradient Descent")
+plt.legend()
+plt.grid(True)
+plt.show()
+

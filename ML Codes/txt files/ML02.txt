@@ -1,0 +1,151 @@
+PRACTICAL 2: EMAIL SPAM DETECTION
+=================================
+Run each step in a separate notebook cell, in order.
+
+STEP 1
+----------------------------------------
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    confusion_matrix,
+    classification_report
+)
+
+STEP 2
+----------------------------------------
+file_path = r"C:\Users\Keshav Kalani\Desktop\lets do this\practicals\ML Codes\ML dataset\emails.csv"
+df = pd.read_csv(file_path)
+
+print("Dataset loaded successfully")
+print("Rows and columns:", df.shape)
+print(df.head())
+
+STEP 3
+----------------------------------------
+print("Column names:")
+print(df.columns.tolist())
+
+print("\nDataset information:")
+df.info()
+
+print("\nMissing values:", df.isnull().sum().sum())
+print("Duplicate rows:", df.duplicated().sum())
+
+STEP 4
+----------------------------------------
+target_column = "Prediction"
+
+if target_column not in df.columns:
+    raise ValueError(
+        "Prediction column not found. Check the column names printed in Step 3."
+    )
+
+# Remove rows with missing values
+df = df.dropna().copy()
+
+# Separate the target label from the input features
+y = df[target_column]
+
+# Remove target and email ID columns from the features
+columns_to_drop = [target_column]
+columns_to_drop += [
+    col for col in df.columns
+    if col.lower() in ["email no.", "email_no", "email", "unnamed: 0"]
+]
+
+X = df.drop(columns=columns_to_drop)
+
+print("Feature data shape:", X.shape)
+print("Target data shape:", y.shape)
+print("\nClass counts:")
+print(y.value_counts())
+
+STEP 5
+----------------------------------------
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+print("Training rows:", X_train.shape[0])
+print("Testing rows:", X_test.shape[0])
+
+STEP 6
+----------------------------------------
+knn_model = make_pipeline(
+    StandardScaler(),
+    KNeighborsClassifier(n_neighbors=5)
+)
+
+knn_model.fit(X_train, y_train)
+knn_predictions = knn_model.predict(X_test)
+
+STEP 7
+----------------------------------------
+svm_model = make_pipeline(
+    StandardScaler(),
+    SVC(kernel="linear")
+)
+
+svm_model.fit(X_train, y_train)
+svm_predictions = svm_model.predict(X_test)
+
+STEP 8
+----------------------------------------
+results = pd.DataFrame({
+    "Model": ["K-Nearest Neighbors", "Support Vector Machine"],
+    "Accuracy": [
+        accuracy_score(y_test, knn_predictions),
+        accuracy_score(y_test, svm_predictions)
+    ],
+    "Precision": [
+        precision_score(y_test, knn_predictions, zero_division=0),
+        precision_score(y_test, svm_predictions, zero_division=0)
+    ],
+    "Recall": [
+        recall_score(y_test, knn_predictions, zero_division=0),
+        recall_score(y_test, svm_predictions, zero_division=0)
+    ],
+    "F1 Score": [
+        f1_score(y_test, knn_predictions, zero_division=0),
+        f1_score(y_test, svm_predictions, zero_division=0)
+    ]
+})
+
+print(results)
+
+STEP 9
+----------------------------------------
+knn_cm = confusion_matrix(y_test, knn_predictions)
+svm_cm = confusion_matrix(y_test, svm_predictions)
+
+fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+
+sns.heatmap(knn_cm, annot=True, fmt="d", cmap="Blues", ax=axes[0])
+axes[0].set_title("KNN Confusion Matrix")
+axes[0].set_xlabel("Predicted")
+axes[0].set_ylabel("Actual")
+
+sns.heatmap(svm_cm, annot=True, fmt="d", cmap="Greens", ax=axes[1])
+axes[1].set_title("SVM Confusion Matrix")
+axes[1].set_xlabel("Predicted")
+axes[1].set_ylabel("Actual")
+
+plt.tight_layout()
+plt.show()
+
